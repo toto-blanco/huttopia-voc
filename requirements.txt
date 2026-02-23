@@ -2,6 +2,8 @@
 requests==2.31.0
 beautifulsoup4==4.12.3
 selenium==4.18.1
+googlemaps==4.10.0      # Pour l'API Places
+cloudscraper==1.2.71    # Alternative à requests pour Trustpilot (contourne Cloudflare)
 
 # Traitement
 pandas==2.2.0
@@ -10,6 +12,7 @@ langdetect==1.0.9
 # ML
 transformers==4.38.0
 torch==2.2.0
+sentencepiece==0.2.1    # Souvent requis par les modèles BERT/BART de HuggingFace
 
 # Dashboard
 streamlit==1.32.0
