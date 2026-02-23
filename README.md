@@ -11,7 +11,7 @@
 
 ## 📋 Contexte
 
-Les équipes Commercial & Marketing d'Huttopia n'ont pas de vue consolidée sur les avis clients dispersés sur Google, Trustpilot et TripAdvisor. Ce projet démontre :
+Les équipes Commercial & Marketing d'Huttopia sont intéressé par des dashboard sur les avis clients dispersés sur Google, Trustpilot et TripAdvisor. Ce projet démontre :
 
 - La collecte automatisée des avis multi-sources
 - L'analyse NLP (sentiment + classification thématique)
