@@ -1,80 +1,87 @@
-"""
-Scraper pour Google Places API - collecte des avis Google Maps.
-
-Usage:
-    python google_scraper.py
-    
-Nécessite: GOOGLE_PLACES_API_KEY dans .env
-"""
-
 import requests
 import pandas as pd
 from datetime import datetime
 import os
+import time
 from dotenv import load_dotenv
 
 load_dotenv()
 
-
-def scrape_google_places(brand="Huttopia", place_ids=None):
-    """
-    Collecte les avis Google Maps via l'API Places.
-    
-    Args:
-        brand (str): Nom de la marque
-        place_ids (list): Liste des Place IDs à collecter
-        
-    Returns:
-        pd.DataFrame: DataFrame avec colonnes [id, brand, source, date, note_brute, texte, langue]
-    """
-    
-    api_key = os.getenv("GOOGLE_PLACES_API_KEY")
-    
-    if not api_key:
-        print("⚠️ GOOGLE_PLACES_API_KEY non trouvée dans .env")
-        return pd.DataFrame()
-    
-    reviews = []
-    
-    # TODO Phase 2: Implémenter l'appel à l'API
-    # URL: https://maps.googleapis.com/maps/api/place/details/json
-    
-    print(f"Collecte des avis {brand} sur Google Places...")
-    
-    # TODO: Boucle sur les place_ids
-    # TODO: Parser les reviews de la réponse JSON
-    # TODO: Gérer la pagination (next_page_token)
-    
-    return pd.DataFrame(reviews)
-
-
 def find_place_ids(query="Huttopia France"):
-    """
-    Trouve les Place IDs correspondant à une recherche.
-    
-    Args:
-        query (str): Requête de recherche
-        
-    Returns:
-        list: Liste des Place IDs trouvés
-    """
-    
+    """Trouve les établissements Huttopia et leurs Place IDs."""
     api_key = os.getenv("GOOGLE_PLACES_API_KEY")
+    url = "https://maps.googleapis.com/maps/api/place/textsearch/json"
     
-    if not api_key:
-        return []
+    params = {
+        'query': query,
+        'key': api_key
+    }
     
-    # TODO: Implémenter la recherche de places
-    # URL: https://maps.googleapis.com/maps/api/place/textsearch/json
+    print(f"🔍 Recherche des établissements pour : {query}...")
+    response = requests.get(url, params=params)
+    results = response.json().get('results', [])
     
-    return []
+    places = []
+    for place in results:
+        places.append({
+            'name': place.get('name'),
+            'place_id': place.get('place_id'),
+            'address': place.get('formatted_address')
+        })
+    
+    print(f"✅ {len(places)} établissements trouvés.")
+    return places
 
+def scrape_google_places(brand="Huttopia"):
+    """Collecte les avis pour chaque établissement trouvé."""
+    api_key = os.getenv("GOOGLE_PLACES_API_KEY")
+    if not api_key:
+        print("⚠️ GOOGLE_PLACES_API_KEY manquante.")
+        return pd.DataFrame()
+
+    places = find_place_ids(f"{brand} France")
+    all_reviews = []
+    
+    url = "https://maps.googleapis.com/maps/api/place/details/json"
+    
+    for place in places:
+        print(f"📥 Récupération des avis pour : {place['name']}...")
+        params = {
+            'place_id': place['place_id'],
+            'fields': 'reviews,name',
+            'key': api_key,
+            'language': 'fr'
+        }
+        
+        response = requests.get(url, params=params)
+        data = response.json().get('result', {})
+        reviews = data.get('reviews', [])
+        
+        for r in reviews:
+            all_reviews.append({
+                'id': r.get('time'), # Google n'envoie pas d'ID unique, on utilise le timestamp
+                'brand': brand,
+                'nom_etablissement': place['name'], # Pour tes analyses par site !
+                'source': 'Google',
+                'date': datetime.fromtimestamp(r.get('time')).strftime('%Y-%m-%d'),
+                'note_brute': r.get('rating'),
+                'texte': r.get('text'),
+                'langue': r.get('language', 'fr')
+            })
+        
+        # Petit délai pour respecter les quotas
+        time.sleep(0.2)
+
+    return pd.DataFrame(all_reviews)
 
 if __name__ == "__main__":
-    # Test rapide
     df = scrape_google_places(brand="Huttopia")
-    print(f"Collecté: {len(df)} avis")
     
-    if len(df) > 0:
-        df.to_csv("../data/raw/google_raw.csv", index=False)
-        print("Sauvegardé dans data/raw/google_raw.csv")
+    if not df.empty:
+        # On s'assure que le dossier existe
+        os.makedirs("../data/raw", exist_ok=True)
+        output_file = "../data/raw/google_raw.csv"
+        df.to_csv(output_file, index=False, encoding='utf-8-sig')
+        print(f"\n🚀 Mission accomplie : {len(df)} avis Google collectés et sauvegardés !")
+    else:
+        print("❌ Aucun avis trouvé. Vérifie ta clé API ou tes quotas.")
