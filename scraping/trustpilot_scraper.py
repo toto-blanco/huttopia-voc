@@ -48,13 +48,16 @@ def _extract_reviews_from_jsonld(html: str) -> list[dict]:
     """
     Parse le HTML rendu par Selenium et extrait les avis depuis
     les balises <script type='application/ld+json'>.
+
+    Structure Trustpilot : @graph est une liste plate où les avis
+    sont des éléments @type=Review directement (pas imbriqués dans LocalBusiness).
     """
     soup    = BeautifulSoup(html, "html.parser")
     reviews = []
 
     for script in soup.find_all("script", type="application/ld+json"):
         try:
-            data = json.loads(script.string or "")
+            data = json.loads(script.get_text() or "")
         except (json.JSONDecodeError, TypeError):
             continue
 
@@ -64,7 +67,7 @@ def _extract_reviews_from_jsonld(html: str) -> list[dict]:
             if not isinstance(obj, dict):
                 continue
 
-            # Cas 1 : @graph est un dict ou une liste
+            # @graph est une liste plate — on parcourt tous les éléments
             graph = obj.get("@graph", [])
             if isinstance(graph, dict):
                 graph = [graph]
@@ -72,46 +75,36 @@ def _extract_reviews_from_jsonld(html: str) -> list[dict]:
             for item in graph:
                 if not isinstance(item, dict):
                     continue
-                if item.get("@type") == "LocalBusiness":
-                    reviews.extend(_parse_business_reviews(item))
-
-            # Cas 2 : l'objet racine est directement un LocalBusiness
-            if obj.get("@type") == "LocalBusiness":
-                reviews.extend(_parse_business_reviews(obj))
+                if item.get("@type") == "Review":
+                    parsed = _parse_review(item)
+                    if parsed:
+                        reviews.append(parsed)
 
     return reviews
 
 
-def _parse_business_reviews(business: dict) -> list[dict]:
-    """Extrait et normalise les avis depuis un objet LocalBusiness JSON-LD."""
-    parsed = []
+def _parse_review(r: dict) -> dict | None:
+    """Normalise un élément @type=Review du JSON-LD Trustpilot."""
+    text = r.get("reviewBody", "").strip()
+    if not text:
+        return None
 
-    for r in business.get("review", []):
-        if not isinstance(r, dict) or r.get("@type") != "Review":
-            continue
+    rating_obj = r.get("reviewRating", {})
+    note       = str(rating_obj.get("ratingValue", "N/A"))
+    date       = r.get("datePublished", "")[:10]
+    headline   = r.get("headline", "").strip()
+    lang       = r.get("inLanguage", "fr")
 
-        text = r.get("reviewBody", "").strip()
-        if not text:
-            continue
-
-        rating_obj = r.get("reviewRating", {})
-        note       = str(rating_obj.get("ratingValue", "N/A"))
-        date       = r.get("datePublished", "")[:10]
-        headline   = r.get("headline", "").strip()
-        lang       = r.get("inLanguage", "fr")
-
-        parsed.append({
-            "brand":             "Huttopia",
-            "nom_etablissement": "Marque Globale",
-            "source":            "Trustpilot",
-            "note_brute":        note,
-            "texte":             text,
-            "date":              date,
-            "headline":          headline,
-            "langue":            lang,
-        })
-
-    return parsed
+    return {
+        "brand":             "Huttopia",
+        "nom_etablissement": "Marque Globale",
+        "source":            "Trustpilot",
+        "note_brute":        note,
+        "texte":             text,
+        "date":              date,
+        "headline":          headline,
+        "langue":            lang,
+    }
 
 
 def scrape_trustpilot() -> pd.DataFrame:
