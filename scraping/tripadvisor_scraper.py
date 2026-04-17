@@ -140,7 +140,7 @@ def scrape_site(name: str, base_url: str) -> list[dict]:
             break
 
         # Détection de blocage
-        if not response or len(response.html) < 1000:
+        if not response or len(response.html_content) < 1000:
             print(f"   ⚠️  Réponse vide ou trop courte — arrêt sur ce camping")
             break
 
