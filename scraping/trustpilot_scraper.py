@@ -70,9 +70,13 @@ def _extract_reviews_from_jsonld(soup: BeautifulSoup) -> list[dict]:
         objects = data if isinstance(data, list) else [data]
 
         for obj in objects:
+            if not isinstance(obj, dict):
+                continue
             # Cas 1 : @graph contient plusieurs types
             graph = obj.get("@graph", [])
             for item in graph:
+                if not isinstance(item, dict):
+                    continue
                 if item.get("@type") == "LocalBusiness":
                     reviews.extend(_parse_business_reviews(item))
 
