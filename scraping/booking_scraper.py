@@ -131,14 +131,15 @@ def _extract_note(card, driver: webdriver.Chrome) -> str:
     return "N/A"
 
 
-def _click_next_page(driver: webdriver.Chrome, wait: WebDriverWait) -> bool:
+def _click_next_page(driver: webdriver.Chrome, wait: WebDriverWait, current_count: int) -> bool:
     """
     Clique sur le bouton 'Page suivante' de la section avis.
+    Attend que de nouvelles cards apparaissent avant de retourner.
     Retourne True si le clic a réussi, False si plus de page suivante.
     """
     next_selectors = [
-        'button[aria-label*="page suivante"]',
-        'button[aria-label*="next"]',
+        'button[aria-label="Page suivante"]',
+        'button[aria-label="Next page"]',
         '[data-testid="review-next-page-button"]',
         'button[class*="pagenext"]',
     ]
@@ -146,6 +147,12 @@ def _click_next_page(driver: webdriver.Chrome, wait: WebDriverWait) -> bool:
         try:
             btn = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, sel)))
             driver.execute_script("arguments[0].click();", btn)
+            # Attend que le nombre de cards change (nouvelles cards chargées)
+            for _ in range(10):
+                time.sleep(1)
+                new_cards = driver.find_elements(By.CSS_SELECTOR, 'div[data-testid="review-card"]')
+                if len(new_cards) != current_count:
+                    break
             return True
         except Exception:
             continue
@@ -216,7 +223,8 @@ def scrape_site(name: str, url: str, driver: webdriver.Chrome) -> list[dict]:
             break
 
         if page < MAX_PAGES:
-            if not _click_next_page(driver, wait):
+            current_card_count = len(driver.find_elements(By.CSS_SELECTOR, 'div[data-testid="review-card"]'))
+            if not _click_next_page(driver, wait, current_card_count):
                 print(f"   ℹ️  Pas de page suivante — fin de pagination")
                 break
             time.sleep(random.uniform(*DELAY_PAGE))
