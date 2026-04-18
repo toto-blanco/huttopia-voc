@@ -420,7 +420,106 @@ def vue_marketing(df: pd.DataFrame) -> None:
 
     st.markdown("---")
 
-    # ── Langues ───────────────────────────────────────────────────────────────
+    # ── Nuage de mots par thème ───────────────────────────────────────────────
+    st.markdown("### Nuage de mots par thème")
+    st.caption("Termes les plus fréquents dans les avis — filtrable par thème et tonalité")
+
+    col_wc1, col_wc2, col_wc3 = st.columns([2, 2, 2])
+    with col_wc1:
+        themes_wc = sorted(df["theme_display"].dropna().unique().tolist())
+        theme_wc  = st.selectbox("Thème", themes_wc, key="wc_theme")
+    with col_wc2:
+        tonalite  = st.radio(
+            "Tonalité",
+            ["Tous", "Positifs (note ≥ 4)", "Négatifs (note ≤ 2.5)"],
+            horizontal=True,
+            key="wc_ton",
+        )
+    with col_wc3:
+        camping_wc = st.selectbox(
+            "Camping",
+            ["Tous"] + sorted([c for c in df["nom_etablissement"].unique()
+                               if c not in ("Marque_Globale", "Inconnu")]),
+            key="wc_camping",
+        )
+
+    # Filtrage
+    df_wc = df[df["theme_display"] == theme_wc].copy()
+    if tonalite == "Positifs (note ≥ 4)":
+        df_wc = df_wc[df_wc["note_std"] >= 4.0]
+    elif tonalite == "Négatifs (note ≤ 2.5)":
+        df_wc = df_wc[df_wc["note_std"] <= 2.5]
+    if camping_wc != "Tous":
+        df_wc = df_wc[df_wc["nom_etablissement"] == camping_wc]
+
+    # Mots à exclure (stopwords + termes non informatifs)
+    STOPWORDS = {
+        "le", "la", "les", "un", "une", "des", "du", "de", "et", "en",
+        "au", "aux", "que", "qui", "est", "pas", "sur", "par", "pour",
+        "dans", "avec", "nous", "on", "il", "elle", "ils", "elles", "je",
+        "se", "sa", "son", "ses", "ce", "cette", "ces", "ou", "mais",
+        "donc", "car", "ni", "ne", "plus", "très", "bien", "tout", "aussi",
+        "être", "avoir", "plus", "si", "comme", "lors", "notre", "nos",
+        "huttopia", "camping", "séjour", "avis", "note", "commentaire",
+        "nuits", "envoyé", "avec", "the", "and", "was", "for", "are",
+        "very", "we", "had", "have", "been", "were", "our", "this",
+    }
+
+    if df_wc.empty:
+        st.info(f"Aucun avis pour ce filtre ({theme_wc} / {tonalite}).")
+    else:
+        try:
+            from wordcloud import WordCloud
+            import matplotlib.pyplot as plt
+            import re
+
+            # Concatène tous les textes
+            corpus = " ".join(df_wc["texte_propre"].dropna().astype(str).tolist())
+            corpus = re.sub(r"[^\w\sàâäéèêëïîôùûüç'-]", " ", corpus.lower())
+
+            # Couleur selon tonalité
+            if tonalite.startswith("Positifs"):
+                colormap = "Greens"
+                bg = "#F0FFF4"
+            elif tonalite.startswith("Négatifs"):
+                colormap = "Reds"
+                bg = "#FFF5F5"
+            else:
+                colormap = "YlGn"
+                bg = "#F8F9FA"
+
+            wc = WordCloud(
+                width=900, height=380,
+                background_color=bg,
+                colormap=colormap,
+                stopwords=STOPWORDS,
+                max_words=80,
+                min_word_length=4,
+                collocations=False,
+                prefer_horizontal=0.85,
+            ).generate(corpus)
+
+            fig_wc, ax = plt.subplots(figsize=(11, 4))
+            ax.imshow(wc, interpolation="bilinear")
+            ax.axis("off")
+            fig_wc.patch.set_facecolor(bg)
+            plt.tight_layout(pad=0)
+            st.pyplot(fig_wc)
+            plt.close(fig_wc)
+
+            st.caption(
+                f"{len(df_wc)} avis · thème **{theme_wc}** · "
+                f"tonalité **{tonalite}**"
+                + (f" · camping **{camping_wc}**" if camping_wc != "Tous" else "")
+            )
+
+        except ImportError:
+            st.warning(
+                "La librairie `wordcloud` n'est pas installée. "
+                "Lance : `pip install wordcloud matplotlib`"
+            )
+
+    st.markdown("---")
     col_lang, col_verb = st.columns([1, 2])
 
     with col_lang:
