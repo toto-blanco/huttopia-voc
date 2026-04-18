@@ -138,9 +138,9 @@ def load_data() -> pd.DataFrame:
 
 
 def note_to_badge(note: float) -> str:
-    if note >= 4.0:
+    if note >= 3.8:
         return f'<span class="badge badge-green">✓ {note:.2f}/5</span>'
-    elif note >= 3.5:
+    elif note >= 3.4:
         return f'<span class="badge badge-orange">⚠ {note:.2f}/5</span>'
     else:
         return f'<span class="badge badge-red">✗ {note:.2f}/5</span>'
@@ -163,7 +163,7 @@ def sidebar_filters(df: pd.DataFrame) -> pd.DataFrame:
 
     langues = sorted(df["langue"].dropna().unique())
     selected_langues = st.sidebar.multiselect(
-        "Langues", langues, default=["fr"]
+        "Langues", langues, default=langues
     )
 
     st.sidebar.markdown("---")
@@ -311,7 +311,7 @@ def vue_commerciale(df: pd.DataFrame) -> None:
     # Alerte
     moy = tableau["note_moy"].mean()
     tableau["Statut"] = tableau["note_moy"].apply(
-        lambda x: "🟢 OK" if x >= 4.0 else ("🟡 Attention" if x >= 3.5 else "🔴 Alerte")
+        lambda x: "🟢 OK" if x >= 3.8 else ("🟡 Attention" if x >= 3.4 else "🔴 Alerte")
     )
 
     st.write(
