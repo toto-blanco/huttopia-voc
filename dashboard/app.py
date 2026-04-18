@@ -172,8 +172,12 @@ def sidebar_filters(df: pd.DataFrame) -> pd.DataFrame:
         f"{df['nom_etablissement'].nunique()} campings*"
     )
 
+    # Marque_Globale (Trustpilot) inclus si la source Trustpilot est sélectionnée
     mask = (
-        df["nom_etablissement"].isin(selected_campings) &
+        (
+            df["nom_etablissement"].isin(selected_campings) |
+            df["nom_etablissement"].isin(["Marque_Globale", "Inconnu"])
+        ) &
         df["source"].isin(selected_sources) &
         df["langue"].isin(selected_langues)
     )
