@@ -1,7 +1,5 @@
 # 🏕️ Huttopia — Voice of Customer
 
-> Analyse sémantique de 798 avis clients multi-sources pour produire des recommandations opérationnelles actionnables à destination des équipes Commercial & Marketing d'Huttopia.
-
 [![Python](https://img.shields.io/badge/Python-3.13-blue.svg)](https://www.python.org/)
 [![Streamlit](https://img.shields.io/badge/Streamlit-1.x-red.svg)](https://streamlit.io/)
 [![HuggingFace](https://img.shields.io/badge/HuggingFace-BART-yellow.svg)](https://huggingface.co/)
@@ -9,15 +7,23 @@
 
 ---
 
-## 🎯 La question centrale
+## Contexte business
 
-> **Que disent vraiment les clients Huttopia, et que devrait-il prioriser ?**
+Huttopia positionne ses campings-nature sur un segment premium avec une promesse d'expérience authentique en pleine nature. Pour une équipe Commercial & Marketing, la question n'est pas "combien d'étoiles ?" mais **"où se situe l'écart entre la promesse et l'expérience vécue, et que faire en priorité ?"**
 
-Ce projet n'est pas une démonstration technique. C'est une réponse à une question business concrète : comment transformer des milliers d'avis dispersés sur le web en recommandations que des équipes non-data peuvent comprendre et mettre en œuvre.
+Ce projet analyse 798 avis clients collectés sur Booking, Google Maps et Trustpilot pour répondre à cette question avec des données concrètes.
 
 ---
 
-## 🖥️ Aperçu du dashboard
+## Questions business
+
+1. Le positionnement qualité/prix premium est-il perçu positivement par les clients ?
+2. Quels sont les irritants principaux qui dégradent la satisfaction ?
+3. Quels campings nécessitent une attention prioritaire ?
+
+---
+
+## 🖥️ Dashboard
 
 **Vue Commerciale — KPIs et notes par camping**
 ![Vue Commerciale](docs/dashboard_commercial_1.png)
@@ -33,181 +39,132 @@ Ce projet n'est pas une démonstration technique. C'est une réponse à une ques
 
 ---
 
+## Insights & Recommandations
 
+### 1. ✅ Le positionnement premium est validé par les clients
 
-Quatre insights actionnables, issus de l'analyse de 798 avis (Booking · Google Maps · Trustpilot) :
+**Constat :** Le rapport qualité-prix est le thème le mieux noté du corpus (3.95/5 sur 133 avis). 68% des avis sur ce thème sont positifs (≥4/5). Seulement 4 avis sur 133 (3%) sont franchement négatifs — et ils portent sur la politique d'annulation, pas sur le prix.
 
-**1. Le produit core tient ses promesses — c'est un vrai atout.**
-L'hébergement (3.64/5 sur 304 avis) et le rapport qualité-prix (3.95/5 sur 133 avis) sont les thèmes les mieux perçus. Les clients qui paient le prix premium l'acceptent : 68% des avis sur le rapport qualité-prix sont positifs (≥4/5). La nature et l'environnement reviennent systématiquement dans les verbatims 5 étoiles. Le positionnement écotourisme est compris et valorisé par la clientèle.
+**Insight :** Le prix premium est accepté. Les clients qui séjournent chez Huttopia comprennent et valident le positionnement. L'hébergement (3.64/5 sur 304 avis, soit 38% du corpus) confirme que le produit core tient ses promesses.
 
-**2. La propreté est le frein numéro un à la recommandation.**
-Avec une note moyenne de 3.07/5, c'est le thème le plus mal noté — sous la moyenne globale (3.65/5) sur presque tous les campings. C'est aussi le thème le plus cité dans les avis négatifs Google Maps. Agir sur ce seul point pourrait faire remonter la note globale de 0.3 à 0.5 point sur les campings en alerte.
-
-**3. Les activités génèrent des attentes que l'expérience ne tient pas.**
-Le thème Activités concentre 18% des avis avec une note de 3.13/5 — les clients en parlent beaucoup mais sont déçus. C'est un signal de désalignement entre les attentes générées par la communication et l'expérience réelle sur site.
-
-**4. La politique d'annulation est le principal irritant contractuel.**
-Les avis négatifs sur le rapport qualité-prix (4 sur 133) viennent exclusivement de Trustpilot et ne portent pas sur le prix — ils portent sur des remboursements refusés, des conditions générales peu lisibles, et une relation client perçue comme froide en cas de litige. Le risque est sur la gestion des cas exceptionnels, pas sur la tarification.
-
-**Points de référence internes :** Le Moulin (4.26/5) et Font Romeu (3.80/5) surperforment significativement. Leurs pratiques sur l'accueil et la gestion des hébergements méritent d'être analysées et diffusées en interne.
+**Recommandation :** Intégrer le Rapport Qualité/Prix comme KPI stratégique dans le reporting commercial mensuel. Seuil d'alerte à définir à 3.5/5 — toute dégradation signal une remise en cause du positionnement premium à investiguer immédiatement.
 
 ---
 
-## 📊 Résultats du corpus
+### 2. ⚠️ La propreté est l'irritant le plus systématique
+
+**Constat :** Propreté est le thème le moins bien noté du corpus (3.07/5 sur 73 avis), sous la moyenne globale (3.52/5) sur la quasi-totalité des campings. C'est le seul thème où aucun camping ne dépasse 3.6/5 (hors Font Romeu à 3.59/5).
+
+**Campings les plus concernés :**
+
+| Camping | Note Propreté | Note globale |
+|---|---|---|
+| Rambouillet | 3.00 / 5 | 3.27 / 5 🔴 |
+| Arcachon | 3.00 / 5 | 3.75 / 5 🟡 |
+| Gorges du Verdon | 3.00 / 5 | 3.63 / 5 🟡 |
+| Sarlat | 3.00 / 5 | 3.55 / 5 🟡 |
+| Versailles | 3.11 / 5 | 3.51 / 5 🟡 |
+| Font Romeu | 3.59 / 5 | 3.80 / 5 🟢 |
+
+**Recommandation :** Audit terrain sanitaires sur les 5 campings dont la note Propreté est ≤3.0/5 pour identifier les causes racines (fréquence de nettoyage, vétusté des installations, dimensionnement par rapport à la fréquentation). Font Romeu (3.59/5) peut servir de référence interne.
+
+**Impact estimé :** La propreté est un facteur hygiénique — son absence génère des avis négatifs, son amélioration ne génère pas d'avis enthousiastes mais supprime un frein majeur à la recommandation.
+
+---
+
+### 3. ⚠️ Les activités sont un levier de différenciation sous-exploité
+
+**Constat :** Activités est le 2ème thème le moins bien noté (3.13/5 sur 148 avis, soit 18.5% du corpus). C'est un volume significatif — les clients en parlent beaucoup mais les notes restent basses sur la plupart des campings.
+
+**Campings les plus concernés :**
+
+| Camping | Note Activités | Note globale |
+|---|---|---|
+| Dieulefit | 3.00 / 5 | 3.29 / 5 🔴 |
+| Rambouillet | 3.00 / 5 | 3.27 / 5 🔴 |
+| Arcachon | 3.00 / 5 | 3.75 / 5 🟡 |
+| Sud Ardèche | 3.08 / 5 | 3.24 / 5 🔴 |
+
+**Référence interne :** Le Moulin (4.17/5 sur Activités) et Font Romeu (3.36/5) surperforment — leurs pratiques méritent d'être documentées.
+
+**Recommandation :** Analyser qualitativement les verbatims Activités sur les campings en alerte pour identifier si le problème est l'offre elle-même (manque d'animations) ou sa communication (clients qui ne trouvent pas ce qui existe). Ces deux causes n'ont pas le même coût de résolution.
+
+---
+
+### 4. 🔴 Quatre campings nécessitent une attention prioritaire
+
+Les campings suivants cumulent une note globale inférieure à 3.4/5 — sous le seuil d'alerte — avec des faiblesses sur plusieurs thèmes simultanément :
+
+| Camping | Note globale | Point faible principal |
+|---|---|---|
+| Sud Ardèche | 3.24 / 5 | Activités (3.08/5) |
+| Rambouillet | 3.27 / 5 | Propreté (3.00/5) + Activités (3.00/5) |
+| Dieulefit | 3.29 / 5 | Activités (3.00/5) |
+| Lac Serre-Ponçon | 3.39 / 5 | Activités (3.12/5) |
+
+**Rambouillet est le cas le plus préoccupant** — seul camping avec deux thèmes à 3.00/5 simultanément (Propreté et Activités).
+
+---
+
+## Corpus & Méthodologie
+
+**798 avis · 10 campings · 3 sources · 6 langues détectées**
 
 | Source | Avis | Note moyenne |
 |---|---|---|
-| Google Maps | 450 | 3.00 / 5 |
-| Booking | 336 | 4.30 / 5 |
-| Trustpilot | 12 | 1.25 / 5 |
-| **Total** | **798** | **3.65 / 5** |
+| Google Maps | 450 (56%) | 3.00 / 5 |
+| Booking | 336 (42%) | 4.30 / 5 |
+| Trustpilot | 12 (2%) | 1.25 / 5 |
 
-> ⚠️ L'écart entre sources reflète un biais de plateforme réel, pas une anomalie. Booking filtre des clients vérifiés post-séjour (satisfaction haute). Trustpilot attire principalement les insatisfaits (biais négatif fort). Google Maps est la source la plus représentative.
+> ⚠️ **Biais de plateforme :** l'écart entre sources est réel et attendu. Booking filtre des clients vérifiés post-séjour. Trustpilot concentre les insatisfaits. Google Maps est la source la plus représentative de la satisfaction réelle.
 
-| Camping | Note moy. | Thème dominant | Statut |
-|---|---|---|---|
-| Le Moulin | 4.26 / 5 | Qualité/Prix | 🟢 OK |
-| Font Romeu | 3.80 / 5 | Hébergement | 🟢 OK |
-| Arcachon | 3.75 / 5 | Hébergement | 🟡 Attention |
-| Gorges du Verdon | 3.63 / 5 | Hébergement | 🟡 Attention |
-| Sarlat | 3.55 / 5 | Qualité/Prix | 🟡 Attention |
-| Versailles | 3.51 / 5 | Hébergement | 🟡 Attention |
-| Lac Serre-Ponçon | 3.39 / 5 | Hébergement | 🔴 Alerte |
-| Dieulefit | 3.29 / 5 | Activités | 🔴 Alerte |
-| Rambouillet | 3.27 / 5 | Hébergement | 🔴 Alerte |
-| Sud Ardèche | 3.24 / 5 | Activités | 🔴 Alerte |
+**Classification thématique :** BART zero-shot (`facebook/bart-large-mnli`), labels passés en anglais pour de meilleures performances sur texte français, 7 thèmes. Précision validée manuellement sur 20 avis : ~85%.
 
 ---
 
-## 🏗️ Architecture du pipeline
+## Limites méthodologiques
 
-```
-Booking · Google Maps · Trustpilot
-         │
-         ▼
-   [Scraping]
-   Selenium + Scrapling (StealthyFetcher)
-   798 avis · 10 campings · 3 sources
-         │
-         ▼
-   [Nettoyage & fusion]
-   Normalisation notes · Détection langue (langdetect)
-   Déduplication · Standardisation noms établissements
-         │
-         ▼
-   [Classification thématique]
-   BART zero-shot (facebook/bart-large-mnli)
-   Labels EN → mapping FR · multi_label=True
-   Précision validée : ~85% (20 avis échantillon manuel)
-         │
-         ▼
-   [Dashboard Streamlit]
-   Vue Commerciale : KPIs · alertes · notes par camping
-   Vue Marketing : thèmes · heatmap · nuage de mots · verbatims
-```
+- **Corpus partiel :** 798 avis sur 10 campings (sur 56+ sites Huttopia France). Les insights sont indicatifs, à confirmer sur un corpus élargi.
+- **TripAdvisor non inclus :** protection anti-bot trop agressive, source abandonnée après tentative avec Scrapling.
+- **Dates manquantes :** 90% des avis Google Maps sans date — aucune analyse temporelle possible sur cette source.
+- **Notes Google Maps :** les avis sans note numérique reçoivent une valeur par défaut (3.0/5) — les moyennes Google sont à interpréter avec précaution.
+- **Précision classification ~85% :** le modèle sur-classe en "Hébergement" sur les avis multi-thèmes.
 
 ---
 
-## 🛠️ Stack technique
+## Stack technique
 
-| Composant | Technologie | Choix |
-|---|---|---|
-| **Collecte** | Selenium, Scrapling (StealthyFetcher) | Scrapling pour contourner la protection Cloudflare (Trustpilot) |
-| **Traitement** | pandas, langdetect | Détection langue sur 6 langues détectées |
-| **Classification** | `facebook/bart-large-mnli` | Zero-shot, labels EN pour meilleure précision sur texte FR |
-| **Dashboard** | Streamlit + Plotly | Deux vues métier distinctes (Commercial / Marketing) |
-
----
-
-## 🤖 Collaboration avec Claude (Anthropic)
-
-Ce projet a été développé en collaboration active avec **Claude Sonnet** (Anthropic).
-
-**Ce que Claude a fait :**
-La rédaction de l'ensemble des scripts Python a été déléguée à Claude : scrapers (Booking, Google Maps, Trustpilot, TripAdvisor), pipeline de nettoyage et fusion (`data_merger.py`), classification thématique (`topic_classification.py`), et dashboard Streamlit (`app.py`). Claude a également assuré le débogage itératif en temps réel (sélecteurs CSS, gestion des erreurs, chemins relatifs).
-
-**Ce que j'ai fait :**
-La direction du projet, les choix analytiques et techniques (BART zero-shot vs alternatives, taxonomie des 7 thèmes, seuils d'alerte, structure du dashboard), la validation manuelle des résultats ML, et la formulation des insights business. Chaque script produit par Claude a été testé, validé et ajusté selon les résultats réels.
-
-**Pourquoi cette transparence ?**
-Utiliser un assistant IA pour accélérer la production de code est une compétence en soi — savoir formuler le bon problème, valider les outputs, et garder la maîtrise analytique. C'est exactement ce qu'un Business Analyst fait avec une équipe data.
-
----
-
-## 📦 Installation
+| Composant | Technologie |
+|---|---|
+| Collecte | Selenium, Scrapling (StealthyFetcher) |
+| Traitement | pandas, langdetect |
+| Classification thématique | `facebook/bart-large-mnli` (zero-shot) |
+| Dashboard | Streamlit + Plotly |
 
 ```bash
+# Installation
 git clone https://github.com/TON_USERNAME/huttopia-voc.git
 cd huttopia-voc
 pip install -r requirements.txt
 
-# Installer les navigateurs Scrapling (pour TripAdvisor)
-scrapling install
-```
-
----
-
-## 🚀 Lancer le pipeline
-
-```bash
-# 1. Collecte
-python scraping/trustpilot_scraper.py
-python scraping/booking_scraper.py
-python scraping/maps_selenium.py
-
-# 2. Fusion & nettoyage
-python processing/data_merger.py
-
-# 3. Classification thématique (~80 min sur CPU)
-python ml/topic_classification.py
-
-# 4. Dashboard
+# Lancer le dashboard
 streamlit run dashboard/app.py
 ```
 
 ---
 
-## 📊 Thèmes de classification
+## Collaboration avec Claude (Anthropic)
 
-7 labels définis dans `config/labels.py`, passés en anglais au modèle BART pour de meilleures performances sur du texte français :
+Ce projet a été développé en collaboration active avec **Claude Sonnet** (Anthropic).
 
-| Label FR | Label EN (modèle) |
-|---|---|
-| Accueil et personnel | Welcome and staff |
-| Hébergement et confort | Accommodation and comfort |
-| Nature et environnement | Nature and environment |
-| Propreté et sanitaires | Cleanliness and sanitation |
-| Restauration et alimentation | Food and dining |
-| Activités et animations | Activities and entertainment |
-| Rapport qualité-prix | Value for money |
+La rédaction des scripts Python a été déléguée à Claude : scrapers, pipeline de nettoyage, classification thématique, dashboard. La direction analytique, les choix méthodologiques, la validation des résultats ML et la formulation des insights restent de ma responsabilité. Chaque script a été testé et validé sur les données réelles.
+
+Utiliser un assistant IA pour accélérer la production de code est une compétence à part entière — savoir formuler le bon problème, valider les outputs et garder la maîtrise analytique est précisément ce qu'un Business Analyst fait avec une équipe data.
 
 ---
 
-## 🗺️ Roadmap
+## Auteur
 
-- [x] Collecte : 798 avis (Booking + Google Maps + Trustpilot)
-- [x] Nettoyage, fusion, détection langue (6 langues)
-- [x] Classification thématique BART (~85% précision)
-- [x] Dashboard Streamlit (Vue Commerciale + Vue Marketing)
-- [x] Nuage de mots par thème et tonalité
-- [ ] Analyse de sentiment par thème (en cours)
-- [ ] README insights finalisé après sentiment
-- [ ] V2 : benchmark concurrentiel (Homair, Sandaya, Sites & Paysages)
+Projet réalisé dans le cadre d'une candidature au poste **Business Analyst Commercial & Marketing** chez Huttopia.
 
----
-
-## ⚠️ Limites de l'analyse
-
-- **TripAdvisor non inclus** : protection anti-bot trop agressive en 2026, source abandonnée après tentative avec Scrapling.
-- **Précision classification ~85%** : validée sur 20 avis (échantillon manuel). Le modèle sur-classe en "Hébergement" sur les avis multi-thèmes.
-- **Dates manquantes** : 90% des avis Google Maps n'ont pas de date exploitable — aucune analyse temporelle possible sur cette source.
-- **Trustpilot biaisé** : 11/12 avis à 1 étoile. Source utile pour les signaux d'alerte marque, non représentative de la satisfaction globale.
-
----
-
-## 👤 Auteur
-
-Projet réalisé dans le cadre d'une candidature au poste **Business Analyst Commercial & Marketing** chez Huttopia.  
-Développé avec l'assistance de **Claude Sonnet** (Anthropic) pour la production des scripts.
-
-*Analyse réalisée sur données publiques (avis clients Booking, Google Maps, Trustpilot) dans le cadre d'une candidature. Les conclusions reflètent une analyse externe et ne constituent pas un positionnement officiel d'Huttopia.*
+*Analyse réalisée sur données publiques (avis Booking, Google Maps, Trustpilot) dans le cadre d'une candidature. Les conclusions reflètent une analyse externe et ne constituent pas un positionnement officiel d'Huttopia.*
