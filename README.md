@@ -59,12 +59,14 @@ Ce projet analyse 798 avis clients collectés sur Booking, Google Maps et Trustp
 
 | Camping | Note Propreté | Note globale |
 |---|---|---|
-| Rambouillet | 3.00 / 5 | 3.27 / 5 🔴 |
-| Arcachon | 3.00 / 5 | 3.75 / 5 🟡 |
-| Gorges du Verdon | 3.00 / 5 | 3.63 / 5 🟡 |
-| Sarlat | 3.00 / 5 | 3.55 / 5 🟡 |
+| Rambouillet | 3.00 / 5 ⚠️ | 3.27 / 5 🔴 |
+| Arcachon | 3.00 / 5 ⚠️ | 3.75 / 5 🟡 |
+| Gorges du Verdon | 3.00 / 5 ⚠️ | 3.63 / 5 🟡 |
+| Sarlat | 3.00 / 5 ⚠️ | 3.55 / 5 🟡 |
 | Versailles | 3.11 / 5 | 3.51 / 5 🟡 |
 | Font Romeu | 3.59 / 5 | 3.80 / 5 🟢 |
+
+> ⚠️ Les notes à 3.00/5 correspondent principalement à des avis Google Maps sans note numérique explicite (valeur par défaut attribuée). Le signal est à confirmer par une lecture des verbatims plutôt que par la note seule.
 
 **Recommandation :** Audit terrain sanitaires sur les 5 campings dont la note Propreté est ≤3.0/5 pour identifier les causes racines (fréquence de nettoyage, vétusté des installations, dimensionnement par rapport à la fréquentation). Font Romeu (3.59/5) peut servir de référence interne.
 
@@ -80,10 +82,12 @@ Ce projet analyse 798 avis clients collectés sur Booking, Google Maps et Trustp
 
 | Camping | Note Activités | Note globale |
 |---|---|---|
-| Dieulefit | 3.00 / 5 | 3.29 / 5 🔴 |
-| Rambouillet | 3.00 / 5 | 3.27 / 5 🔴 |
-| Arcachon | 3.00 / 5 | 3.75 / 5 🟡 |
+| Dieulefit | 3.00 / 5 ⚠️ | 3.29 / 5 🔴 |
+| Rambouillet | 3.00 / 5 ⚠️ | 3.27 / 5 🔴 |
+| Arcachon | 3.00 / 5 ⚠️ | 3.75 / 5 🟡 |
 | Sud Ardèche | 3.08 / 5 | 3.24 / 5 🔴 |
+
+> ⚠️ Même réserve que pour la Propreté : les notes à 3.00/5 sont à confirmer par lecture des verbatims — elles peuvent refléter le fallback Google Maps plutôt qu'une vraie évaluation des activités.
 
 **Référence interne :** Le Moulin (4.17/5 sur Activités) et Font Romeu (3.36/5) surperforment — leurs pratiques méritent d'être documentées.
 
