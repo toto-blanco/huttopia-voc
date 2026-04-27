@@ -17,7 +17,23 @@ Ce projet n'est pas une démonstration technique. C'est une réponse à une ques
 
 ---
 
-## 💡 Ce que cette analyse révèle
+## 🖥️ Aperçu du dashboard
+
+**Vue Commerciale — KPIs et notes par camping**
+![Vue Commerciale](docs/dashboard_commercial_1.png)
+![Tableau de bord par camping](docs/dashboard_commercial_2.png)
+
+**Vue Marketing — Thèmes et heatmap**
+![Vue Marketing](docs/dashboard_marketing_1.png)
+![Heatmap thèmes × camping](docs/dashboard_marketing_2.png)
+
+**Vue Marketing — Nuage de mots et verbatims**
+![Nuage de mots](docs/dashboard_marketing_3.png)
+![Verbatims clients](docs/dashboard_marketing_4.png)
+
+---
+
+
 
 Quatre insights actionnables, issus de l'analyse de 798 avis (Booking · Google Maps · Trustpilot) :
 
