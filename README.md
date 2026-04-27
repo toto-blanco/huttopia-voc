@@ -209,3 +209,5 @@ streamlit run dashboard/app.py
 
 Projet réalisé dans le cadre d'une candidature au poste **Business Analyst Commercial & Marketing** chez Huttopia.  
 Développé avec l'assistance de **Claude Sonnet** (Anthropic) pour la production des scripts.
+
+*Analyse réalisée sur données publiques (avis clients Booking, Google Maps, Trustpilot) dans le cadre d'une candidature. Les conclusions reflètent une analyse externe et ne constituent pas un positionnement officiel d'Huttopia.*
