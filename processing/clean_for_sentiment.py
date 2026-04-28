@@ -39,6 +39,9 @@ BOOKING_METADATA = re.compile(
     re.IGNORECASE | re.DOTALL,
 )
 
+# Supprime "Avec une note de X" n'importe où dans le texte (pas seulement en tête)
+BOOKING_NOTE = re.compile(r"avec une note de \d+[,.]?\d*\s*", re.IGNORECASE)
+
 # Supprime les préfixes de type hébergement
 # "Chalet 2 Chambres 3 nuits · mars 2026 Voyageur individuel"
 BOOKING_PREFIX = re.compile(
@@ -55,6 +58,8 @@ def clean_booking_text(text: str) -> str:
     text = BOOKING_PREFIX.sub("", text).strip()
     # Supprime la ligne "Commentaire envoyé le..." et "Avec une note de..."
     text = BOOKING_METADATA.sub("", text).strip()
+    # Supprime toute occurrence résiduelle de "Avec une note de X"
+    text = BOOKING_NOTE.sub("", text).strip()
     # Supprime "Voyageur individuel" résiduel
     text = re.sub(r"^voyageur individuel\s*", "", text, flags=re.IGNORECASE).strip()
     return text
