@@ -112,10 +112,20 @@ def run_sentiment(df: pd.DataFrame, model) -> pd.DataFrame:
     print(f"   Batch size : {BATCH_SIZE}")
     print(f"   Temps estimé : {total * 1.2 / 60:.0f}-{total * 1.5 / 60:.0f} min sur CPU\n")
 
-    # Initialise les colonnes
-    df["sentiment_stars"] = 3
-    df["sentiment_score"] = 0.5
-    df["sentiment_label"] = "Neutre"
+    # Initialise les colonnes avec proxy note_std pour les avis sans texte analysable
+    def note_to_sentiment(note):
+        if pd.isna(note):
+            return "Neutre", 3, 0.5
+        if note >= 4.0:
+            return "Positif", int(min(5, round(note))), 0.6
+        elif note <= 2.5:
+            return "Négatif", int(max(1, round(note))), 0.6
+        else:
+            return "Neutre", 3, 0.5
+
+    df["sentiment_stars"] = df["note_std"].apply(lambda x: note_to_sentiment(x)[1])
+    df["sentiment_score"] = df["note_std"].apply(lambda x: note_to_sentiment(x)[2])
+    df["sentiment_label"] = df["note_std"].apply(lambda x: note_to_sentiment(x)[0])
 
     results = []
     start   = time.time()
