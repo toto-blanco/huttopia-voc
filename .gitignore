@@ -1,6 +1,5 @@
 # Données jamais versionnées
-data/
-*.csv
+data/raw/
 *.sqlite
 *.db
 
