@@ -285,13 +285,14 @@ def vue_commerciale(df: pd.DataFrame) -> None:
         )
         fig2.update_traces(
             textinfo="percent+label",
-            rotation=120,
+            textposition="outside",
+            rotation=40,
             hovertemplate="<b>%{label}</b><br>%{value} avis<br>Note moy: " +
                           source_stats["note_moy"].round(2).astype(str).values[0],
         )
         fig2.update_layout(
-            height=200, showlegend=False,
-            margin=dict(l=0, r=0, t=0, b=0),
+            height=280, showlegend=False,
+            margin=dict(l=40, r=40, t=40, b=40),
             paper_bgcolor="white",
         )
         st.plotly_chart(fig2, use_container_width=True)
