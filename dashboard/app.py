@@ -285,6 +285,7 @@ def vue_commerciale(df: pd.DataFrame) -> None:
         )
         fig2.update_traces(
             textinfo="percent+label",
+            rotation=120,
             hovertemplate="<b>%{label}</b><br>%{value} avis<br>Note moy: " +
                           source_stats["note_moy"].round(2).astype(str).values[0],
         )
