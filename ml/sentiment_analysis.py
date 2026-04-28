@@ -33,8 +33,9 @@ DATA_PATH    = PROJECT_ROOT / "data" / "processed" / "huttopia_reviews_master.cs
 MODEL_NAME   = "nlptown/bert-base-multilingual-uncased-sentiment"
 BATCH_SIZE   = 16      # Réduis à 8 si erreur mémoire
 MAX_TOKENS   = 512     # Limite BERT
-TEXT_COLUMN  = "texte_propre"
-MIN_TEXT_LEN = 10
+TEXT_COLUMN  = "texte_sentiment"   # Colonne nettoyée par clean_for_sentiment.py
+FALLBACK_COL = "texte_propre"      # Fallback si texte_sentiment absent
+MIN_TEXT_LEN = 15
 
 # Mapping étoiles → label
 # 1-2 étoiles = Négatif, 3 étoiles = Neutre, 4-5 étoiles = Positif
@@ -94,8 +95,15 @@ def analyze_batch(texts: list[str], model) -> list[dict]:
 
 def run_sentiment(df: pd.DataFrame, model) -> pd.DataFrame:
     """Applique l'analyse de sentiment sur tout le DataFrame."""
-    mask_valid = df[TEXT_COLUMN].str.len() >= MIN_TEXT_LEN
-    texts      = df.loc[mask_valid, TEXT_COLUMN].tolist()
+    # Utilise texte_sentiment si disponible, sinon texte_propre
+    col = TEXT_COLUMN if TEXT_COLUMN in df.columns else FALLBACK_COL
+    if col == FALLBACK_COL:
+        print(f"   ⚠️  Colonne '{TEXT_COLUMN}' absente — utilise '{FALLBACK_COL}'")
+        print("   Lance d'abord : python processing/clean_for_sentiment.py\n")
+
+    # Exclut les avis sans contenu analysable (NaN dans texte_sentiment)
+    mask_valid = df[col].notna() & (df[col].astype(str).str.len() >= MIN_TEXT_LEN)
+    texts      = df.loc[mask_valid, col].astype(str).tolist()
     indices    = df.loc[mask_valid].index.tolist()
     total      = len(texts)
 
