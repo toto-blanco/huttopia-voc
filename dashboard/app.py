@@ -190,15 +190,16 @@ def vue_commerciale(df: pd.DataFrame) -> None:
     st.caption("Synthèse des performances clients par camping — indicateurs décisionnels")
 
     # ── KPIs globaux ──────────────────────────────────────────────────────────
-    col1, col2, col3, col4 = st.columns(4)
+    col1, col2, col3, col4, col5 = st.columns(5)
 
-    note_moy   = df["note_std"].mean()
-    nb_avis    = len(df)
-    nb_camping = df[df["camping"].notna()]["camping"].nunique()
-    pct_positif = (
-        (df["sentiment_label"] == "Positif").sum() / len(df) * 100
-        if df["sentiment_label"].notna().any() else None
-    )
+    note_moy    = df["note_std"].mean()
+    nb_avis     = len(df)
+    nb_camping  = df[df["camping"].notna()]["camping"].nunique()
+
+    has_sentiment = df["sentiment_label"].notna().any()
+    pct_positif   = (df["sentiment_label"] == "Positif").sum() / len(df) * 100 if has_sentiment else None
+    pct_negatif   = (df["sentiment_label"] == "Négatif").sum() / len(df) * 100 if has_sentiment else None
+    nps_proxy     = round(pct_positif - pct_negatif, 1) if has_sentiment else None
 
     with col1:
         delta = f"{note_moy - NOTE_GLOBALE_HUTTOPIA:+.2f} vs corpus"
@@ -210,6 +211,16 @@ def vue_commerciale(df: pd.DataFrame) -> None:
     with col4:
         if pct_positif is not None:
             st.metric("Avis positifs", f"{pct_positif:.0f}%")
+        else:
+            st.metric("Sources", df["source"].nunique())
+    with col5:
+        if nps_proxy is not None:
+            st.metric(
+                "NPS proxy",
+                f"{nps_proxy:.0f}",
+                help="(% Positif - % Négatif) — approximation du Net Promoter Score. "
+                     "Non comparable à un NPS officiel mesuré en enquête.",
+            )
         else:
             st.metric("Sources", df["source"].nunique())
 
@@ -303,6 +314,7 @@ def vue_commerciale(df: pd.DataFrame) -> None:
             nb_avis=("note_std", "count"),
             note_moy=("note_std", "mean"),
             theme_dominant=("theme_label", lambda x: x.mode()[0] if len(x) > 0 else "—"),
+            pct_positif=("sentiment_label", lambda x: (x == "Positif").sum() / len(x) * 100),
         )
         .reset_index()
         .rename(columns={"camping": "Camping"})
@@ -311,15 +323,15 @@ def vue_commerciale(df: pd.DataFrame) -> None:
     tableau["Note"] = tableau["note_moy"].apply(lambda x: note_to_badge(round(x, 2)))
     tableau["Thème dominant"] = tableau["theme_dominant"].map(THEME_DISPLAY_NAMES).fillna("—")
     tableau["Avis"] = tableau["nb_avis"]
+    tableau["% Positif"] = tableau["pct_positif"].apply(lambda x: f"{x:.0f}%")
 
-    # Alerte
     moy = tableau["note_moy"].mean()
     tableau["Statut"] = tableau["note_moy"].apply(
         lambda x: "🟢 OK" if x >= 3.8 else ("🟡 Attention" if x >= 3.4 else "🔴 Alerte")
     )
 
     st.write(
-        tableau[["Camping", "Note", "Avis", "Thème dominant", "Statut"]]
+        tableau[["Camping", "Note", "% Positif", "Avis", "Thème dominant", "Statut"]]
         .to_html(escape=False, index=False),
         unsafe_allow_html=True,
     )
@@ -420,7 +432,61 @@ def vue_marketing(df: pd.DataFrame) -> None:
 
     st.markdown("---")
 
-    # ── Nuage de mots par thème ───────────────────────────────────────────────
+    # ── Sentiment par thème ───────────────────────────────────────────────────
+    st.markdown("### Sentiment par thème")
+    st.caption("% d'avis positifs / neutres / négatifs par thème")
+
+    if df["sentiment_label"].notna().any():
+        sent_theme = (
+            df.groupby(["theme_display", "sentiment_label"])
+            .size()
+            .unstack(fill_value=0)
+            .reset_index()
+        )
+        # Assure que les 3 colonnes existent
+        for col in ["Positif", "Neutre", "Négatif"]:
+            if col not in sent_theme.columns:
+                sent_theme[col] = 0
+
+        sent_theme["total"] = sent_theme[["Positif", "Neutre", "Négatif"]].sum(axis=1)
+        sent_theme["% Positif"] = (sent_theme["Positif"] / sent_theme["total"] * 100).round(1)
+        sent_theme["% Neutre"]  = (sent_theme["Neutre"]  / sent_theme["total"] * 100).round(1)
+        sent_theme["% Négatif"] = (sent_theme["Négatif"] / sent_theme["total"] * 100).round(1)
+        sent_theme = sent_theme.sort_values("% Positif", ascending=True)
+
+        fig_sent = go.Figure()
+        fig_sent.add_trace(go.Bar(
+            y=sent_theme["theme_display"], x=sent_theme["% Positif"],
+            name="Positif", orientation="h",
+            marker_color=COLOR_OK,
+            text=sent_theme["% Positif"].apply(lambda x: f"{x:.0f}%"),
+            textposition="inside",
+        ))
+        fig_sent.add_trace(go.Bar(
+            y=sent_theme["theme_display"], x=sent_theme["% Neutre"],
+            name="Neutre", orientation="h",
+            marker_color="#ADB5BD",
+            text=sent_theme["% Neutre"].apply(lambda x: f"{x:.0f}%" if x > 5 else ""),
+            textposition="inside",
+        ))
+        fig_sent.add_trace(go.Bar(
+            y=sent_theme["theme_display"], x=sent_theme["% Négatif"],
+            name="Négatif", orientation="h",
+            marker_color=COLOR_ACCENT,
+            text=sent_theme["% Négatif"].apply(lambda x: f"{x:.0f}%" if x > 5 else ""),
+            textposition="inside",
+        ))
+        fig_sent.update_layout(
+            barmode="stack",
+            height=320,
+            plot_bgcolor="white", paper_bgcolor="white",
+            margin=dict(l=10, r=10, t=10, b=10),
+            xaxis=dict(range=[0, 100], ticksuffix="%", gridcolor="#F0F0F0"),
+            legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
+        )
+        st.plotly_chart(fig_sent, use_container_width=True)
+
+    st.markdown("---")
     st.markdown("### Nuage de mots par thème")
     st.caption("Termes les plus fréquents dans les avis — filtrable par thème et tonalité")
 
@@ -431,7 +497,7 @@ def vue_marketing(df: pd.DataFrame) -> None:
     with col_wc2:
         tonalite  = st.radio(
             "Tonalité",
-            ["Tous", "Positifs (note ≥ 4)", "Négatifs (note ≤ 2.5)"],
+            ["Tous", "Positifs", "Négatifs"],
             horizontal=True,
             key="wc_ton",
         )
@@ -443,12 +509,12 @@ def vue_marketing(df: pd.DataFrame) -> None:
             key="wc_camping",
         )
 
-    # Filtrage
+    # Filtrage via sentiment_label
     df_wc = df[df["theme_display"] == theme_wc].copy()
-    if tonalite == "Positifs (note ≥ 4)":
-        df_wc = df_wc[df_wc["note_std"] >= 4.0]
-    elif tonalite == "Négatifs (note ≤ 2.5)":
-        df_wc = df_wc[df_wc["note_std"] <= 2.5]
+    if tonalite == "Positifs" and df["sentiment_label"].notna().any():
+        df_wc = df_wc[df_wc["sentiment_label"] == "Positif"]
+    elif tonalite == "Négatifs" and df["sentiment_label"].notna().any():
+        df_wc = df_wc[df_wc["sentiment_label"] == "Négatif"]
     if camping_wc != "Tous":
         df_wc = df_wc[df_wc["nom_etablissement"] == camping_wc]
 
@@ -478,10 +544,10 @@ def vue_marketing(df: pd.DataFrame) -> None:
             corpus = re.sub(r"[^\w\sàâäéèêëïîôùûüç'-]", " ", corpus.lower())
 
             # Couleur selon tonalité
-            if tonalite.startswith("Positifs"):
+            if tonalite == "Positifs":
                 colormap = "Greens"
                 bg = "#F0FFF4"
-            elif tonalite.startswith("Négatifs"):
+            elif tonalite == "Négatifs":
                 colormap = "Reds"
                 bg = "#FFF5F5"
             else:
