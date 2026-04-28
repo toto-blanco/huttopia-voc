@@ -473,12 +473,22 @@ def vue_commerciale(df: pd.DataFrame) -> None:
                 (df["texte_propre"].str.len() > 50)
             ]
             .sort_values(["note_std", "sentiment_score"], ascending=True)
-            .head(3)
+            .head(10)
         )
+        import re as _re
+        shown_neg = 0
         for _, row in top_neg.iterrows():
+            if shown_neg >= 3:
+                break
             texte_raw = str(row.get("texte_sentiment", "") or row["texte_propre"])
             if texte_raw == "nan" or len(texte_raw) < 10:
                 texte_raw = str(row["texte_propre"])
+            # Nettoyage résiduel métadonnées
+            texte_raw = _re.sub(r"\d+\s*nuits?\s*·.*?(?=\w{4})", "", texte_raw, flags=_re.IGNORECASE).strip()
+            texte_raw = _re.sub(r"commentaire envoyé le.*?\d{4}\s*", "", texte_raw, flags=_re.IGNORECASE).strip()
+            texte_raw = _re.sub(r"avec une note de \d+[,.]?\d*\s*", "", texte_raw, flags=_re.IGNORECASE).strip()
+            if len(texte_raw) < 20:
+                continue
             texte = texte_raw[:250]
             st.markdown(
                 f'<div class="verbatim" style="border-left-color:#D62828">'
@@ -487,6 +497,7 @@ def vue_commerciale(df: pd.DataFrame) -> None:
                 f'</div>',
                 unsafe_allow_html=True,
             )
+            shown_neg += 1
 def vue_marketing(df: pd.DataFrame) -> None:
     st.markdown("## 🎯 Vue Marketing")
     st.caption("Distribution thématique, analyse par camping et verbatims clients")
@@ -788,12 +799,24 @@ def vue_marketing(df: pd.DataFrame) -> None:
         if filtre_source != "Toutes":
             df_verb = df_verb[df_verb["source"] == filtre_source]
 
-        df_verb = df_verb.sort_values("note_std", ascending=False).head(15)
+        df_verb = df_verb.sort_values("note_std", ascending=False).head(30)
 
+        # Exclut les avis sans contenu réel
+        VIDES = ["ce client n'a pas laissé de commentaire", "voir la traduction",
+                 "see the translation", "nan"]
+        def get_clean_text(row):
+            ts = str(row.get("texte_sentiment", "") or "")
+            if ts and ts != "nan" and len(ts) >= 15:
+                return ts
+            return str(row["texte_propre"])
+
+        shown = 0
         for _, row in df_verb.iterrows():
-            texte_raw = str(row.get("texte_sentiment", "") or row["texte_propre"])
-            if texte_raw == "nan" or len(texte_raw) < 10:
-                texte_raw = str(row["texte_propre"])
+            if shown >= 15:
+                break
+            texte_raw = get_clean_text(row)
+            if any(v in texte_raw.lower() for v in VIDES) or len(texte_raw) < 15:
+                continue
             texte = texte_raw[:300]
             note  = row["note_std"]
             emoji = "⭐" * int(round(note)) if pd.notna(note) else ""
@@ -804,6 +827,7 @@ def vue_marketing(df: pd.DataFrame) -> None:
                 f'</div>',
                 unsafe_allow_html=True,
             )
+            shown += 1
 
 
 # ── MAIN ──────────────────────────────────────────────────────────────────────
