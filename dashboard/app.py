@@ -138,6 +138,7 @@ def load_data() -> pd.DataFrame:
 
 
 def note_to_badge(note: float) -> str:
+    """Badge couleur sur la note — indicatif uniquement, le Statut est basé sur le sentiment."""
     if note >= 3.8:
         return f'<span class="badge badge-green">✓ {note:.2f}/5</span>'
     elif note >= 3.4:
@@ -327,9 +328,20 @@ def vue_commerciale(df: pd.DataFrame) -> None:
     tableau["Avis"] = tableau["nb_avis"]
     tableau["% Positif"] = tableau["pct_positif"].apply(lambda x: f"{x:.0f}%")
 
-    moy = tableau["note_moy"].mean()
-    tableau["Statut"] = tableau["note_moy"].apply(
-        lambda x: "🟢 OK" if x >= 3.8 else ("🟡 Attention" if x >= 3.4 else "🔴 Alerte")
+    # Statut basé sur % positif (sentiment BERT) plutôt que sur la note moyenne.
+    # Justification : 56% des avis sont Google Maps sans note numérique explicite
+    # (fallback 3.0/5), ce qui tire artificiellement les notes vers le bas.
+    # Le sentiment BERT est calculé sur le texte réel — plus fiable sur ce corpus.
+    # Seuils : ≥80% positif = OK, ≥65% = Attention, <65% = Alerte
+    tableau["Statut"] = tableau["pct_positif"].apply(
+        lambda x: "🟢 OK" if x >= 80 else ("🟡 Attention" if x >= 65 else "🔴 Alerte")
+    )
+
+    st.caption(
+        "⚙️ **Statut basé sur le % d'avis positifs (analyse BERT)** — "
+        "plus fiable que la note moyenne sur ce corpus : 56% des avis Google Maps "
+        "n'ont pas de note numérique explicite (valeur par défaut 3.0/5 attribuée). "
+        "Seuils : 🟢 ≥80% · 🟡 ≥65% · 🔴 <65%"
     )
 
     st.write(
