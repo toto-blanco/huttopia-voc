@@ -338,8 +338,144 @@ def vue_commerciale(df: pd.DataFrame) -> None:
         unsafe_allow_html=True,
     )
 
+    st.markdown("---")
 
-# ── VUE MARKETING ─────────────────────────────────────────────────────────────
+    # ── 1. Campings à surveiller / références ─────────────────────────────────
+    st.markdown("### Signaux à retenir")
+
+    df_camp = df[df["camping"].notna()].copy()
+    pct_neg_camp = (
+        df_camp.groupby("camping")["sentiment_label"]
+        .apply(lambda x: (x == "Négatif").sum() / len(x) * 100)
+        .reset_index()
+        .rename(columns={"camping": "Camping", "sentiment_label": "pct_neg"})
+        .sort_values("pct_neg", ascending=False)
+    )
+    pct_pos_camp = (
+        df_camp.groupby("camping")["sentiment_label"]
+        .apply(lambda x: (x == "Positif").sum() / len(x) * 100)
+        .reset_index()
+        .rename(columns={"camping": "Camping", "sentiment_label": "pct_pos"})
+        .sort_values("pct_pos", ascending=False)
+    )
+
+    col_risk, col_ref = st.columns(2)
+    with col_risk:
+        top_risk = pct_neg_camp.iloc[0]
+        st.markdown(
+            f'<div class="metric-card alert">'
+            f'<div style="font-size:11px;color:#6C757D;font-weight:600;text-transform:uppercase;letter-spacing:0.5px">🔴 À surveiller</div>'
+            f'<div style="font-size:1.4rem;font-weight:700;margin:6px 0">{top_risk["Camping"]}</div>'
+            f'<div style="color:#D62828">{top_risk["pct_neg"]:.0f}% d\'avis négatifs</div>'
+            f'</div>',
+            unsafe_allow_html=True,
+        )
+    with col_ref:
+        top_ref = pct_pos_camp.iloc[0]
+        st.markdown(
+            f'<div class="metric-card">'
+            f'<div style="font-size:11px;color:#6C757D;font-weight:600;text-transform:uppercase;letter-spacing:0.5px">🟢 Référence interne</div>'
+            f'<div style="font-size:1.4rem;font-weight:700;margin:6px 0">{top_ref["Camping"]}</div>'
+            f'<div style="color:#2D6A4F">{top_ref["pct_pos"]:.0f}% d\'avis positifs</div>'
+            f'</div>',
+            unsafe_allow_html=True,
+        )
+
+    st.markdown("---")
+
+    # ── 2. Bar chart sentiment par camping ────────────────────────────────────
+    st.markdown("### Sentiment par camping")
+    st.caption("Répartition % Positif / Neutre / Négatif — complémentaire à la note moyenne")
+
+    sent_camp = (
+        df_camp.groupby(["camping", "sentiment_label"])
+        .size()
+        .unstack(fill_value=0)
+        .reset_index()
+    )
+    for col in ["Positif", "Neutre", "Négatif"]:
+        if col not in sent_camp.columns:
+            sent_camp[col] = 0
+    sent_camp["total"] = sent_camp[["Positif", "Neutre", "Négatif"]].sum(axis=1)
+    sent_camp["% Positif"] = (sent_camp["Positif"] / sent_camp["total"] * 100).round(1)
+    sent_camp["% Neutre"]  = (sent_camp["Neutre"]  / sent_camp["total"] * 100).round(1)
+    sent_camp["% Négatif"] = (sent_camp["Négatif"] / sent_camp["total"] * 100).round(1)
+    sent_camp = sent_camp.sort_values("% Positif")
+
+    fig_sc = go.Figure()
+    fig_sc.add_trace(go.Bar(
+        y=sent_camp["camping"], x=sent_camp["% Positif"],
+        name="Positif", orientation="h",
+        marker_color=COLOR_OK,
+        text=sent_camp["% Positif"].apply(lambda x: f"{x:.0f}%"),
+        textposition="inside",
+    ))
+    fig_sc.add_trace(go.Bar(
+        y=sent_camp["camping"], x=sent_camp["% Neutre"],
+        name="Neutre", orientation="h",
+        marker_color="#ADB5BD",
+        text=sent_camp["% Neutre"].apply(lambda x: f"{x:.0f}%" if x > 8 else ""),
+        textposition="inside",
+    ))
+    fig_sc.add_trace(go.Bar(
+        y=sent_camp["camping"], x=sent_camp["% Négatif"],
+        name="Négatif", orientation="h",
+        marker_color=COLOR_ACCENT,
+        text=sent_camp["% Négatif"].apply(lambda x: f"{x:.0f}%" if x > 5 else ""),
+        textposition="inside",
+    ))
+    fig_sc.update_layout(
+        barmode="stack",
+        height=360,
+        plot_bgcolor="white", paper_bgcolor="white",
+        margin=dict(l=10, r=10, t=10, b=10),
+        xaxis=dict(range=[0, 100], ticksuffix="%", gridcolor="#F0F0F0"),
+        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
+    )
+    st.plotly_chart(fig_sc, use_container_width=True)
+
+    st.markdown("---")
+
+    # ── 3. Top verbatims positifs & négatifs ──────────────────────────────────
+    st.markdown("### Verbatims représentatifs")
+
+    col_pos, col_neg = st.columns(2)
+
+    with col_pos:
+        st.markdown("#### 🟢 Les 3 meilleurs avis")
+        top_pos = (
+            df[df["sentiment_label"] == "Positif"]
+            [df["texte_propre"].str.len() > 50]
+            .sort_values("sentiment_score", ascending=False)
+            .head(3)
+        )
+        for _, row in top_pos.iterrows():
+            texte = str(row["texte_propre"])[:250]
+            st.markdown(
+                f'<div class="verbatim">'
+                f'<span class="source-tag">{row["source"]} · {row["nom_etablissement"]}</span><br>'
+                f'{texte}{"..." if len(str(row["texte_propre"])) > 250 else ""}'
+                f'</div>',
+                unsafe_allow_html=True,
+            )
+
+    with col_neg:
+        st.markdown("#### 🔴 Les 3 avis les plus critiques")
+        top_neg = (
+            df[df["sentiment_label"] == "Négatif"]
+            [df["texte_propre"].str.len() > 50]
+            .sort_values("sentiment_score", ascending=False)
+            .head(3)
+        )
+        for _, row in top_neg.iterrows():
+            texte = str(row["texte_propre"])[:250]
+            st.markdown(
+                f'<div class="verbatim" style="border-left-color:#D62828">'
+                f'<span class="source-tag">{row["source"]} · {row["nom_etablissement"]}</span><br>'
+                f'{texte}{"..." if len(str(row["texte_propre"])) > 250 else ""}'
+                f'</div>',
+                unsafe_allow_html=True,
+            )
 def vue_marketing(df: pd.DataFrame) -> None:
     st.markdown("## 🎯 Vue Marketing")
     st.caption("Distribution thématique, analyse par camping et verbatims clients")
