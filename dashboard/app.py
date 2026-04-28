@@ -444,17 +444,23 @@ def vue_commerciale(df: pd.DataFrame) -> None:
     with col_pos:
         st.markdown("#### 🟢 Les 3 meilleurs avis")
         top_pos = (
-            df[df["sentiment_label"] == "Positif"]
-            [df["texte_propre"].str.len() > 50]
-            .sort_values("sentiment_score", ascending=False)
+            df[
+                (df["sentiment_label"] == "Positif") &
+                (df["texte_propre"].str.len() > 50)
+            ]
+            .sort_values(["note_std", "sentiment_score"], ascending=False)
             .head(3)
         )
         for _, row in top_pos.iterrows():
-            texte = str(row["texte_propre"])[:250]
+            # Affiche texte_sentiment nettoyé si disponible, sinon texte_propre
+            texte_raw = str(row.get("texte_sentiment", "") or row["texte_propre"])
+            if texte_raw == "nan" or len(texte_raw) < 10:
+                texte_raw = str(row["texte_propre"])
+            texte = texte_raw[:250]
             st.markdown(
                 f'<div class="verbatim">'
                 f'<span class="source-tag">{row["source"]} · {row["nom_etablissement"]}</span><br>'
-                f'{texte}{"..." if len(str(row["texte_propre"])) > 250 else ""}'
+                f'{texte}{"..." if len(texte_raw) > 250 else ""}'
                 f'</div>',
                 unsafe_allow_html=True,
             )
@@ -462,17 +468,22 @@ def vue_commerciale(df: pd.DataFrame) -> None:
     with col_neg:
         st.markdown("#### 🔴 Les 3 avis les plus critiques")
         top_neg = (
-            df[df["sentiment_label"] == "Négatif"]
-            [df["texte_propre"].str.len() > 50]
-            .sort_values("sentiment_score", ascending=False)
+            df[
+                (df["sentiment_label"] == "Négatif") &
+                (df["texte_propre"].str.len() > 50)
+            ]
+            .sort_values(["note_std", "sentiment_score"], ascending=True)
             .head(3)
         )
         for _, row in top_neg.iterrows():
-            texte = str(row["texte_propre"])[:250]
+            texte_raw = str(row.get("texte_sentiment", "") or row["texte_propre"])
+            if texte_raw == "nan" or len(texte_raw) < 10:
+                texte_raw = str(row["texte_propre"])
+            texte = texte_raw[:250]
             st.markdown(
                 f'<div class="verbatim" style="border-left-color:#D62828">'
                 f'<span class="source-tag">{row["source"]} · {row["nom_etablissement"]}</span><br>'
-                f'{texte}{"..." if len(str(row["texte_propre"])) > 250 else ""}'
+                f'{texte}{"..." if len(texte_raw) > 250 else ""}'
                 f'</div>',
                 unsafe_allow_html=True,
             )
@@ -780,13 +791,16 @@ def vue_marketing(df: pd.DataFrame) -> None:
         df_verb = df_verb.sort_values("note_std", ascending=False).head(15)
 
         for _, row in df_verb.iterrows():
-            texte = str(row["texte_propre"])[:300]
+            texte_raw = str(row.get("texte_sentiment", "") or row["texte_propre"])
+            if texte_raw == "nan" or len(texte_raw) < 10:
+                texte_raw = str(row["texte_propre"])
+            texte = texte_raw[:300]
             note  = row["note_std"]
             emoji = "⭐" * int(round(note)) if pd.notna(note) else ""
             st.markdown(
                 f'<div class="verbatim">'
                 f'<span class="source-tag">{row["source"]} · {row["nom_etablissement"]}</span> '
-                f'{emoji}<br>{texte}{"..." if len(str(row["texte_propre"])) > 300 else ""}'
+                f'{emoji}<br>{texte}{"..." if len(texte_raw) > 300 else ""}'
                 f'</div>',
                 unsafe_allow_html=True,
             )
